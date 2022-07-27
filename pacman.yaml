@@ -1,0 +1,80 @@
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpa-pacman
+  namespace: default
+spec:
+  maxReplicas: 5
+  minReplicas: 1
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: pacman
+  targetCPUUtilizationPercentage: 1
+status:
+  currentReplicas: 1
+  desiredReplicas: 0
+  
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pacman
+spec:
+  rules:
+  - host: pacman.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: pacman
+            port:
+              number: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pacman
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
+  selector:
+    app: pacman
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    apps: pacman
+  name: pacman
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pacman
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: pacman
+    spec:
+      containers:
+      - command:
+        image: ghcr.io/danielasofia/pacman:2.0
+        name: pacman
+        ports:
+        - containerPort: 80
+        resources:
+          limits:
+            cpu: 500m
+          requests:
+            cpu: 200m
+       
+         
+
